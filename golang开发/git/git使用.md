@@ -21,9 +21,9 @@ git commit -m "first commit"
 <!-- 创建分支 -->
 git branch -M dev
 <!-- 添加远程仓库 origin 是远程仓库名-->
-git remote add Ning-Qing/BetterGolanger https://github.com/Ning-Qing/BetterGolanger.git
+git remote add origin git@github.com:Ning-Qing/BetterGolanger.git
 <!-- 将本地仓库的的内容与远程仓库内容合并 -->
-git push -u Ning-Qing/BetterGolanger dev
+git push -u origin dev
 ```
 
 ## 常见问题
