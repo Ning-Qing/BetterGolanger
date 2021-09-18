@@ -2,7 +2,7 @@
 
 ## golang基础
 - [struct的使用](./golang基础/基本类型与运算/struct的使用/struct的使用.md)
-- [channe与goroutine](./golang基础/基本类型与运算/channel与goroutine/channel与goroutine.md)
+- [channel与goroutine](./golang基础/基本类型与运算/channel与goroutine/channel与goroutine.md)
 - [数组和切片](./golang基础/基本类型与运算/数组和切片/数组和切片.md) 待完成
 ## golang高级
 - [逃逸分析](./golang高级/逃逸分析/逃逸分析.md)

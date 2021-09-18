@@ -41,7 +41,18 @@ type waitq struct {
 从channel读数据，如果channel缓冲区为空或者没有缓冲区，当前goroutine会被阻塞。向channel写数据，如果channel缓冲区已满或者没有缓冲区，当前goroutine会被阻塞。
 - 因读阻塞的goroutine会被向channel写入数据的goroutine唤醒
 - 因写阻塞的goroutine会被从channel读数据的goroutine唤醒
-#### sudog结构
+
+## channal与goroutine
+#### 向channel中写入数据
+- 如果等待接收队列recvq不为空，说明缓冲区中没有数据或者没有缓冲区，此时直接从recvq取出G,并把数据写入，最后把该G唤醒，结束发送过程
+- 如果缓冲区中有空余位置，将数据写入缓冲区，结束发送过程
+- 如果缓冲区中没有空余位置，将待发送数据写入G，将当前G加入sendq，进入等待，等待被读goroutine唤醒
+#### 从channel中读取数据
+- 如果等待发送队列sendq不为空，且没有缓冲区，直接从sendq中取出G，把G中数据读出，最后把G唤醒，结束读取过程
+- 如果等待发送队列sendq不为空，此时说明缓冲区已满，从缓冲区中首部读出数据，把G中数据写入缓冲区尾部，把G唤醒，结束读取过程
+- 如果缓冲区中有数据，则从缓冲区取出数据，结束读取过程
+- 将当前goroutine加入recvq，进入等待，等待被写goroutine唤醒
+#### 一个十分重要的结构——sudog
 ```go
 type sudog struct {
 	g *g // 一个goroutine可以拥有多个sudog  
@@ -50,7 +61,7 @@ type sudog struct {
 	next *sudog 
 	prev *sudog
 
-	elem unsafe.Pointer //数据元素（可能指向堆栈）
+	elem unsafe.Pointer //待读或被写的数据（可能指向堆栈)
 
 	acquiretime int64
 	releasetime int64
@@ -70,7 +81,11 @@ type sudog struct {
 	c        *hchan
 }
 ```
-#### 唤醒
+sudog有三个重要部分，g、elem、isSelect和success
+- g：sudog绑定的goroutine，一个goroutine绑定多个sudog
+- elem：存储指向被写入或者待读数据的指针
+- isSelect和success：因为有g有多个sudog，所以必须要能表示当前的状态参数 
+#### 如何选取一个等待的goroutine
 ```go
 func (q *waitq) dequeue() *sudog {
 	for {
@@ -96,5 +111,60 @@ func (q *waitq) dequeue() *sudog {
 		}
 		return sgp
 	}
+}
+```
+#### 如何唤醒一个等待的goroutine
+```go
+func send(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
+	if raceenabled {
+		if c.dataqsiz == 0 {
+			racesync(c, sg)
+		} else {
+			racenotify(c, c.recvx, nil)
+			racenotify(c, c.recvx, sg)
+			c.recvx++
+			if c.recvx == c.dataqsiz {
+				c.recvx = 0
+			}
+			c.sendx = c.recvx // c.sendx = (c.sendx+1) % c.dataqsiz
+		}
+	}
+	if sg.elem != nil {
+		sendDirect(c.elemtype, sg, ep)
+		sg.elem = nil
+	}
+	gp := sg.g
+	// 解锁hchan  代表sudog完成了阻塞操作
+	unlockf()
+	// 将g.param指向完成阻塞操作的sudog 以唤醒goroutine
+	gp.param = unsafe.Pointer(sg)
+	sg.success = true
+	if sg.releasetime != 0 {
+		sg.releasetime = cputicks()
+	}
+	goready(gp, skip+1)
+}
+```
+param 是指针字段,目前以三种方式使用：
+1. 当一个channel操作唤醒一个阻塞的goroutine时，它设置param指向完成阻塞操作的sudog。在完成channel操作后，应设置为nil，进入等待状态
+2. 通过gcAssistAlloc1向其调用者发信号通知goroutine完成了GC周期
+3. 通过debugCallWrap向新的goroutine传递参数
+
+#### 如何读写数据
+```go
+// 写数据
+func sendDirect(t *_type, sg *sudog, src unsafe.Pointer) {
+	// dst 从读等待队列中选取的g的数据区域
+	dst := sg.elem
+	// 写个屏障
+	typeBitsBulkBarrier(t, uintptr(dst), uintptr(src), t.size)
+	// 拷贝 src是写入的数据
+	memmove(dst, src, t.size)
+}
+// 读数据 反过来就是了
+func recvDirect(t *_type, sg *sudog, dst unsafe.Pointer) {
+	src := sg.elem
+	typeBitsBulkBarrier(t, uintptr(dst), uintptr(src), t.size)
+	memmove(dst, src, t.size)
 }
 ```
