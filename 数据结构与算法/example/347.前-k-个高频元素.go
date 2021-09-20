@@ -1,10 +1,10 @@
-package main
+/*
+ * @lc app=leetcode.cn id=347 lang=golang
+ *
+ * [347] 前 K 个高频元素
+ */
 
-import (
-	"container/heap"
-	"fmt"
-)
-
+// @lc code=start
 type Heap struct {
 	d []data
 }
@@ -23,7 +23,7 @@ func (h *Heap) Swap(i, j int) {
 }
 
 func (h Heap) Less(i, j int) bool {
-	return h.d[i].value > h.d[j].value
+	return h.d[i].value < h.d[j].value
 }
 
 func (h *Heap) Pop() interface{} {
@@ -46,7 +46,6 @@ func topKFrequent(nums []int, k int) []int {
 	heap.Init(h)
 	for key, value := range m {
 		heap.Push(h,data{key: key, value: value})
-		fmt.Println(h.Len())
 		for h.Len() > k {
 			heap.Pop(h)
 		}
@@ -57,9 +56,5 @@ func topKFrequent(nums []int, k int) []int {
 	}
 	return res
 }
-func main() {
+// @lc code=end
 
-	nums := [...]int{-1,-1}
-	fmt.Println(topKFrequent(nums[:],1))
-
-}
