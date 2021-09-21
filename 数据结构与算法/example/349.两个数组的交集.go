@@ -1,17 +1,10 @@
-package main
+/*
+ * @lc app=leetcode.cn id=349 lang=golang
+ *
+ * [349] 两个数组的交集
+ */
 
-import (
-	"fmt"
-)
-
-func getSum(n int)int{
-	res :=0
-	for n>0{
-		res +=(n%10)*(n%10)
-		n/=10
-	}
-}
-
+// @lc code=start
 func intersection(nums1 []int, nums2 []int) []int {
 	m := make(map[int]int)
 	for _,v := range nums1{
@@ -30,9 +23,5 @@ func intersection(nums1 []int, nums2 []int) []int {
 	}
 	return res
 }
+// @lc code=end
 
-func main() {
-	a :=[...]int{1,2,2,1}
-	b :=[...]int{2,2}
-	fmt.Println(intersection(a[:],b[:]))
-}
