@@ -35,4 +35,9 @@ func main() {
 	a :=[...]int{1,2,2,1}
 	b :=[...]int{2,2}
 	fmt.Println(intersection(a[:],b[:]))
+
+	m :=make(map[int]int)
+	m = map[int]int{1:1,2:2}
+	fmt.Println(m)
+
 }

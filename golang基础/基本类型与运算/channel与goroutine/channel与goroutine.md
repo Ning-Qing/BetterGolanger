@@ -1,10 +1,11 @@
 # channel与goroutine
 channel是Golang在语言层面提供的goroutine间的通信方式，与管道通信系统思想一致
-
+- go version 1.7
 ## channel
-[源码详见](./example/src/chan.go)
 ### channel结构
 ```go
+// src/runtime/chan.go
+
 type hchan struct {
 	qcount   uint           //  当前队列中剩余元素个数
 	dataqsiz uint           //  环形队列长度，即可以存放的元素个数
@@ -33,6 +34,8 @@ chan内部实现了一个环形队列作为其缓冲区，队列的长度是创�
 ### goroutine等待队列
 #### goroutine等待队列结构
 ```go
+// src/runtime/chan.go
+
 type waitq struct {
 	first *sudog
 	last  *sudog
@@ -54,6 +57,8 @@ type waitq struct {
 - 将当前goroutine加入recvq，进入等待，等待被写goroutine唤醒
 #### 一个十分重要的结构——sudog
 ```go
+// src/runtime/runtime2.go
+
 type sudog struct {
 	g *g // 一个goroutine可以拥有多个sudog  
 
@@ -87,6 +92,8 @@ sudog有三个重要部分，g、elem、isSelect和success
 - isSelect和success：因为有g有多个sudog，所以必须要能表示当前的状态参数 
 #### 如何选取一个等待的goroutine
 ```go
+// src/runtime/chan.go
+
 func (q *waitq) dequeue() *sudog {
 	for {
         // 从等待队列出队一个sudog
@@ -115,6 +122,8 @@ func (q *waitq) dequeue() *sudog {
 ```
 #### 如何唤醒一个等待的goroutine
 ```go
+// src/runtime/chan.go
+
 func send(c *hchan, sg *sudog, ep unsafe.Pointer, unlockf func(), skip int) {
 	if raceenabled {
 		if c.dataqsiz == 0 {
@@ -152,6 +161,8 @@ param 是指针字段,目前以三种方式使用：
 
 #### 如何读写数据
 ```go
+// src/runtime/chan.go
+
 // 写数据
 func sendDirect(t *_type, sg *sudog, src unsafe.Pointer) {
 	// dst 从读等待队列中选取的g的数据区域
