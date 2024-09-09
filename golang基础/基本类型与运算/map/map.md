@@ -249,7 +249,7 @@ newoverflow()是桶溢出的关键实现,可能会呈现如下结构
 ![](./static/map桶溢出.png)
 
 ### map扩容
--
+- 由于map会进行扩容所以无法对value进行取地址操作
 - 太多的溢出桶
 ```go
 // overLoadFactor reports whether count items placed in 1<<B buckets is over loadFactor.
