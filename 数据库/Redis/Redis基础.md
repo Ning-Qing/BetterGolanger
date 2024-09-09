@@ -1,5 +1,7 @@
 ## redis
 
+[参考文章](https://zhuanlan.zhihu.com/p/663851226)
+
 ```bash
 [root@localhost bin]# redis-cli -p 6379 #连接服务器设定服务器端口
 127.0.0.1:6379> ping #测试连接
